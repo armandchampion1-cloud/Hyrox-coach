@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111111">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg">
+<title>HYROX Coach</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,sans-serif;background:#0b0b0d;color:#f5f5f5}
+button,input,select{font:inherit}button{cursor:pointer}.app{max-width:760px;margin:auto;padding:18px 16px 90px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.brand{font-weight:900;font-size:24px}.sub{color:#999;font-size:12px}
+.card{background:#17171a;border:1px solid #29292e;border-radius:18px;padding:16px;margin:10px 0}
+.hero{background:linear-gradient(145deg,#1e1e22,#121214)}.hero h1{margin:4px 0 6px;font-size:30px}.muted{color:#a7a7ad}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.stat{padding:14px;border-radius:14px;background:#202024}.stat b{font-size:22px;display:block}.stat span{font-size:12px;color:#999}
+.weeknav{display:flex;gap:8px;overflow:auto;padding:4px 0 8px}.weeknav button{white-space:nowrap;border:1px solid #333;background:#19191c;color:#ddd;border-radius:12px;padding:9px 12px}.weeknav .on{background:#f5f5f5;color:#111}
+.days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}.day{min-height:76px;padding:8px 5px;background:#18181b;border:1px solid #29292e;border-radius:12px;text-align:left;color:#eee}.day small{color:#888}.day strong{display:block;font-size:11px;margin-top:8px;line-height:1.15}.day.done{border-color:#777}.day.rest{opacity:.5}.day.active{outline:2px solid #fff}
+.tag{display:inline-block;border-radius:999px;padding:5px 8px;font-size:11px;background:#27272c;color:#ddd;margin:2px}.tag.race{background:#fff;color:#111}
+.session-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.session-title{font-size:21px;font-weight:800}.pill{font-size:12px;color:#aaa}.complete{width:100%;padding:13px;border:0;border-radius:12px;background:#f4f4f4;color:#111;font-weight:800;margin-top:12px}
+.exercise{display:grid;grid-template-columns:1fr auto;gap:10px;padding:13px 0;border-bottom:1px solid #29292e}.exercise:last-child{border-bottom:0}.exercise b{font-size:14px}.exercise .meta{font-size:12px;color:#aaa;margin-top:4px}.edit{display:flex;gap:6px;align-items:center}.edit input{width:65px;background:#0f0f11;color:#fff;border:1px solid #36363b;border-radius:8px;padding:7px;text-align:center}
+.section-title{font-size:16px;font-weight:800;margin:18px 0 8px}.toolbar{display:flex;gap:8px;flex-wrap:wrap}.toolbar button{background:#222226;color:#eee;border:1px solid #36363b;border-radius:10px;padding:9px 11px}
+footer{position:fixed;bottom:0;left:0;right:0;background:#101012ee;backdrop-filter:blur(10px);padding:10px 16px;display:flex;justify-content:center;gap:8px;border-top:1px solid #28282d}.nav{background:none;border:0;color:#aaa;padding:7px 12px}.nav.on{color:#fff;font-weight:800}
+.modal{position:fixed;inset:0;background:#000b;display:none;align-items:flex-end;justify-content:center}.modal.show{display:flex}.sheet{width:min(760px,100%);max-height:88vh;overflow:auto;background:#17171a;border-radius:22px 22px 0 0;padding:18px}.row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:10px 0}.row input{width:90px;background:#0f0f11;color:#fff;border:1px solid #38383d;border-radius:9px;padding:8px}.danger{color:#ff8e8e}
+@media(min-width:700px){.days{gap:9px}.day{min-height:92px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header><div><div class="brand">HYROX COACH</div><div class="sub">Doubles Mixed · 12 décembre 2026</div></div><button class="toolbar" onclick="openSettings()">⚙️</button></header>
+<main id="app"></main>
+</div>
+<footer>
+<button class="nav on" onclick="showTab('home')">🏠 Accueil</button>
+<button class="nav" onclick="showTab('calendar')">📅 Calendrier</button>
+<button class="nav" onclick="showTab('settings')">⚙️ Réglages</button>
+</footer>
+<div id="modal" class="modal" onclick="if(event.target.id==='modal')closeModal()"><div class="sheet" id="sheet"></div></div>
+<script>
+const start=new Date('2026-10-05T12:00:00');
+const race='2026-12-12';
+const key='hyroxCoachV1';
+const defaultSettings={wall:6,farmer:24,push:140,pull:95,reminder:'18:00'};
+let state=JSON.parse(localStorage.getItem(key)||'null')||{done:{},settings:defaultSettings,custom:{}};
+state.settings={...defaultSettings,...(state.settings||{})};
+function save(){localStorage.setItem(key,JSON.stringify(state))}
+const strength=[
+['Développé couché haltères','4×6–8','RPE 8–9'],['Développé incliné haltères','3×8–10','RPE 8'],
+['Shoulder press','3×8','RPE 8'],['Tirage vertical','4×8','RPE 8'],['Row horizontal','3×8','RPE 8'],
+['Hack squat','3×8','RPE 8'],['Soulevé de terre roumain','3×8','RPE 8'],['Ab wheel','3×10','Contrôlé']];
+const weeks=[
+{a:['Row 750m','Sled push 25m','Sled pull 25m','Wall balls 20','Farmer 40m','Burpee broad jumps 10m'],b:['SkiErg 500m','Wall balls 15','Burpees 10','Farmer 40m','Sled push 12.5m','Sled pull 12.5m']},
+{a:['Row 750m','Sled push 25m','Sled pull 25m','Wall balls 20','Farmer 40m','Burpee broad jumps 15m'],b:['SkiErg 1km','Sled push 25m','Sled pull 25m','Burpees 15','Wall balls 20','Farmer 50m']},
+{a:['SkiErg 750m','Sled push 25m','Sled pull 25m','Wall balls 20','Farmer 50m','Burpees 15m'],b:['Row 1km','Sled push 25m','Sled pull 25m','Wall balls 20','Burpees 20m','Farmer 40m','Lunges 20m']},
+{a:['SkiErg 500m','Sled push 25m','Sled pull 25m','Wall balls 15','Farmer 40m','Burpees 10m'],b:['SkiErg 1km','Sled push 25m','Row 1km','Sled pull 25m','Burpees 40m','Farmer 100m','Wall balls 50']},
+{a:['Cardio 750m','Sled push 25m','Sled pull 25m','Burpees 15','Wall balls 20','Farmer 50m','Lunges 20m'],b:['SkiErg/Row 1km','Sled push 25m','Sled pull 25m','Burpees 20m','Farmer 50m','Lunges 25m','Wall balls 20']},
+{a:['SkiErg/Row 1km','Sled push 25m','Sled pull 25m','Wall balls 20','Farmer 50m','Burpees 15m'],b:['SkiErg 1km → Push 25m','Row 1km → Pull 25m','Bike 5min → Burpees 40m','SkiErg 1km → Farmer 100m','Row 1km → Lunges 50m','Bike 5min → Wall balls 50']},
+{a:['Cardio 1km','Sled push 25m','Sled pull 25m','Wall balls 20','Farmer 50m','Burpees 20m','Lunges 25m'],b:['Doubles simulation: SkiErg 1km','Push 50m','Pull 50m','Burpees 80m','Row 1km','Farmer 200m','Lunges 100m','Wall balls 100']},
+{a:['Cardio 750m','Sled push 25m','Sled pull 25m','Burpees 15','Wall balls 20','Farmer 50m','Lunges 20m'],b:['Main simulation: 1km cardio before each station','Push 50m','Pull 50m','Burpees 80m','Farmer 200m','Lunges 100m','Wall balls 100']},
+{a:['Cardio 750m','Sled push 25m','Sled pull 25m','Wall balls 15','Farmer 40m','Burpees 10m'],b:['Cardio 1km','Sled push 25m','Sled pull 25m','Wall balls 20','Burpees 20m','Farmer 50m']},
+{a:['SkiErg 500m','Wall balls 12','Burpees 10','Farmer 20m','Sled push 12.5m','Sled pull 12.5m'],b:['Bike 10min easy','SkiErg 500m ×2','Row 250m ×2','Wall balls 10','Burpees 10','Farmer 20m']}];
+function dateFor(w,d){return new Date(start.getTime()+((w*7+d)*86400000))}
+function iso(d){return d.toISOString().slice(0,10)}
+function label(d){return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})}
+function sessionFor(w,d){
+ if(d===0)return {type:'FORCE',name:'Force · Full Body',min:w===9?50:w===10?45:w===7||w===8?55:60,desc:'Force utile HYROX, RPE contrôlé',items:strength};
+ if(d===1)return {type:'HYROX A',name:'HYROX A · Force sous fatigue',min:w===10?45:w===9?60:65,desc:'Sled + wall balls + carry + cardio',items:weeks[w].a.map(x=>[x,'Plan semaine '+(w+1),''])};
+ if(d===2)return {type:'BIKE',name:'Vélo · Cardio',min:w===10?45:w===9?50:60,desc:'Travail cardio sans impact',items:[['Échauffement','10 min','Z2'],['Bloc principal',w===10?'35 min':'40 min','Z2 / RPE 8 selon semaine'],['Intervalles',w===10?'5×20s':'6×30s','Rapide / récupération']]};
+ if(d===3)return {type:'HYROX B',name:w===6||w===7||w===8?'Simulation HYROX · Doubles':'HYROX B · Spécifique',min:w===10?45:w===9?55:70,desc:'Enchaînements et transitions',items:weeks[w].b.map(x=>[x,'Plan semaine '+(w+1),''])};
+ if(d===5)return w===9&&false?null:{type:'SWIM',name:'Natation · Cardio',min:w===10?45:50,desc:'Endurance sans impact',items:[['Échauffement','300m','Facile'],['Série principale','8–12 × 150/200m','RPE 7'],['Finisher','4 × 100m','RPE 8'],['Retour au calme','200m','Facile']]};
+ return {type:'REST',name:'Repos',min:0,desc:'Récupération',items:[]};
+}
+function weightFor(item){
+ const n=item.toLowerCase();
+ if(n.includes('wall'))return state.settings.wall+' kg';
+ if(n.includes('farmer'))return state.settings.farmer+' kg / main';
+ if(n.includes('push'))return state.settings.push+' kg';
+ if(n.includes('pull'))return state.settings.pull+' kg';
+ return '';
+}
+function completed(id){return !!state.done[id]}
+function sessionId(w,d){return 'w'+w+'d'+d}
+function renderHome(){
+ let now=new Date();let diff=Math.max(0,Math.floor((now-start)/86400000));let w=Math.min(9,Math.floor(diff/7));let today=Math.min(6,Math.max(0,diff%7));
+ let total=0,done=0;for(let wi=0;wi<10;wi++)for(let di=0;di<7;di++){let s=sessionFor(wi,di);if(s.type!=='REST'){total++;if(completed(sessionId(wi,di)))done++}}
+ let next=null;for(let x=0;x<70;x++){let wi=Math.floor(x/7),di=x%7,s=sessionFor(wi,di);if(s.type!=='REST'&&!completed(sessionId(wi,di))){next={wi,di,s};break}}
+ return `<div class="card hero"><div class="sub">OBJECTIF</div><h1>HYROX Doubles Mixed</h1><div class="muted">12 décembre 2026 · ${Math.max(0,Math.ceil((new Date(race)-new Date())/86400000))} jours</div></div>
+ <div class="grid"><div class="stat"><b>${done}/${total}</b><span>séances validées</span></div><div class="stat"><b>S${w+1}</b><span>semaine en cours</span></div></div>
+ <div class="card"><div class="section-title">Prochaine séance</div>${next?`<b>${next.s.name}</b><div class="muted">${label(dateFor(next.wi,next.di))} · ${next.s.min} min</div><button class="complete" onclick="openSession(${next.wi},${next.di})">Ouvrir la séance</button>`:'Plan terminé 🎉'}</div>
+ <div class="card"><div class="section-title">Tes charges HYROX</div><div class="toolbar"><span class="tag">Wall ball ${state.settings.wall} kg</span><span class="tag">Farmer ${state.settings.farmer} kg/main</span><span class="tag">Push ${state.settings.push} kg</span><span class="tag">Pull ${state.settings.pull} kg</span></div></div>`;
+}
+function renderCalendar(){
+ let w=window.currentWeek||0;let days=['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+ return `<div class="weeknav">${Array.from({length:10},(_,i)=>`<button class="${i===w?'on':''}" onclick="currentWeek=${i};render()">${i+1} · ${label(dateFor(i,0))}</button>`).join('')}</div>
+ <div class="card"><div class="section-title">Semaine ${w+1}</div><div class="days">${days.map((dn,d)=>{let s=sessionFor(w,d),id=sessionId(w,d);return `<button class="day ${s.type==='REST'?'rest':''} ${completed(id)?'done':''}" onclick="${s.type==='REST'?'':`openSession(${w},${d})`}"><small>${dn}<br>${label(dateFor(w,d))}</small><strong>${s.type==='REST'?'Repos':s.type==='SWIM'?'🏊 Natation':s.type==='BIKE'?'🚴 Vélo':s.type==='FORCE'?'🏋️ Force':s.type==='HYROX A'?'🔥 HYROX A':s.type==='HYROX B'?'🔥 HYROX B':'🏁 Course'}</strong></button>`}).join('')}</div></div>`;
+}
+function openSession(w,d){
+ let s=sessionFor(w,d),id=sessionId(w,d);
+ if(s.type==='REST')return;
+ document.getElementById('sheet').innerHTML=`<div class="session-head"><div><div class="pill">${label(dateFor(w,d))} · Semaine ${w+1}</div><div class="session-title">${s.name}</div><div class="muted">${s.min} min · ${s.desc}</div></div><button class="toolbar" onclick="closeModal()">✕</button></div>
+ <div class="section-title">Séance</div>${s.items.map((it,i)=>`<div class="exercise"><div><b>${it[0]}</b><div class="meta">${it[1]} ${it[2]?'· '+it[2]:''} ${weightFor(it[0])?'· '+weightFor(it[0]):''}</div></div><div class="edit"><input value="${getCustom(id,i,it[1])}" onchange="setCustom('${id}',${i},this.value)" aria-label="série"></div></div>`).join('')}
+ <div class="toolbar" style="margin-top:14px"><button onclick="resetSession('${id}')">Réinitialiser</button></div>
+ <button class="complete" onclick="toggleDone('${id}');closeModal();render()">${completed(id)?'✓ Séance validée — annuler':'✓ Marquer la séance comme terminée'}</button>`;
+ document.getElementById('modal').classList.add('show');
+}
+function getCustom(id,i,def){return state.custom[id]?.[i]??def}
+function setCustom(id,i,v){state.custom[id]??={};state.custom[id][i]=v;save()}
+function resetSession(id){delete state.custom[id];save();closeModal();render()}
+function toggleDone(id){state.done[id]=!state.done[id];save()}
+function closeModal(){document.getElementById('modal').classList.remove('show')}
+function openSettings(){showTab('settings')}
+function renderSettings(){return `<div class="card"><div class="section-title">Charges personnalisées</div>
+${[['wall','Wall ball (kg)',6],['farmer','Farmer / main (kg)',24],['push','Sled push (kg)',140],['pull','Sled pull (kg)',95]].map(x=>`<div class="row"><span>${x[1]}</span><input type="number" value="${state.settings[x[0]]}" onchange="state.settings['${x[0]}']=+this.value;save();render()"></div>`).join('')}
+</div><div class="card"><div class="section-title">Rappel</div><div class="row"><span>Heure souhaitée</span><input type="time" value="${state.settings.reminder}" onchange="state.settings.reminder=this.value;save()"></div><div class="muted">L'application garde ton heure préférée. Les notifications système nécessitent l'autorisation de ton téléphone et un hébergement PWA.</div></div>
+<div class="card"><div class="section-title">Progression</div><div class="muted">Pour les charges de musculation, augmente de 2,5–5 % quand tu termines toutes les séries à RPE ≤ 8. Pour les charges HYROX, augmente progressivement sans sacrifier les transitions.</div></div>
+<div class="card"><button class="complete" onclick="if(confirm('Réinitialiser toutes les validations et personnalisations ?')){state={done:{},settings:defaultSettings,custom:{}};save();render()}">Réinitialiser l'application</button></div>`}
+function showTab(t){document.querySelectorAll('.nav').forEach(x=>x.classList.remove('on'));let map={home:0,calendar:1,settings:2};document.querySelectorAll('.nav')[map[t]].classList.add('on');window.tab=t;render()}
+function render(){document.getElementById('app').innerHTML=window.tab==='calendar'?renderCalendar():window.tab==='settings'?renderSettings():renderHome()}
+window.tab='home';window.currentWeek=0;render();
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+</script>
+</body>
+</html>
